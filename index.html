@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050e1a">
+<title>LAB Tridimensional — Esfera holográfica 3D · v0.4 experimental</title>
+<style>
+:root{color-scheme:dark;--bg:#050e1a;--panel:#0b1a2c;--line:#236478;--accent:#39e8ff;--text:#e6faff;--muted:#96abbf}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Inter,system-ui,Arial,sans-serif;background:radial-gradient(ellipse at 60% 12%,#103656 0%,#07192c 36%,#030915 88%);color:var(--text)}
+button,input{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible{outline:2px solid #8ff5ff;outline-offset:3px}
+.top{display:flex;gap:12px;justify-content:space-between;align-items:center;padding:15px 22px;border-bottom:1px solid #205166;background:rgba(3,12,23,.82)}
+.logo{font-weight:850;letter-spacing:.09em;font-size:14px;color:#bdfaff}.logo b{color:#38edfa}.sub{margin-top:5px;color:var(--muted);font-size:12px}
+.tag{white-space:nowrap;border:1px solid #357d8d;border-radius:999px;color:#76edff;font-size:11px;padding:6px 10px;background:#103248}
+.layout{display:grid;grid-template-columns:minmax(248px,285px) minmax(0,1fr);gap:16px;padding:16px;max-width:1550px;margin:auto}
+.panel,.viewer,.bottom{border:1px solid #23506c;border-radius:18px;background:linear-gradient(140deg,rgba(15,34,55,.88),rgba(4,14,28,.91));box-shadow:0 0 28px #00151e45}
+.panel{padding:15px;display:flex;flex-direction:column;gap:10px}.section-title{font-size:12px;text-transform:uppercase;letter-spacing:.15em;color:#61d8ea;font-weight:800;padding-bottom:3px}
+.tool{display:flex;gap:10px;align-items:center;min-height:36px}.num{display:grid;place-items:center;flex:0 0 26px;width:26px;height:26px;border-radius:8px;border:1px solid #287989;background:#103347;color:#78e6f0;font-size:11px;font-weight:700}
+.tool-body{min-width:0;flex:1;display:flex;justify-content:space-between;align-items:center;gap:9px}.tool label{font-size:12px;color:#d6ebf4}.tool input[type="range"]{min-width:64px;width:46%;accent-color:#52e9f6}.tool input[type="color"]{width:39px;height:29px;background:transparent;border:0;padding:1px;cursor:pointer}
+.action{border:1px solid #318998;background:linear-gradient(140deg,#13455b,#102d43);padding:9px 12px;border-radius:9px;font-weight:700;font-size:12px;color:#dfffff;transition:filter .15s}.action:hover{filter:brightness(1.24)}.action.active{background:#1b5762;border-color:#6aeaf2;color:white}.action.secondary{background:#0b2339}
+.small{font-size:11px;color:var(--muted);line-height:1.45}.file{display:none}.viewer{min-height:650px;position:relative;overflow:hidden;isolation:isolate}.view-head{position:absolute;top:16px;left:16px;right:16px;z-index:2;pointer-events:none;display:flex;gap:10px;justify-content:space-between;align-items:start}.view-label{font-size:11px;letter-spacing:.12em;color:#8edbe9;text-shadow:0 1px 12px #000}.live{font-size:10px;padding:6px 9px;border:1px solid #186a66;border-radius:5px;color:#73f4df;background:#092b30b0}
+#stage{width:100%;height:100%;min-height:650px;display:block;touch-action:none;outline:none}canvas{display:block;touch-action:none}
+.center-help{position:absolute;bottom:18px;left:16px;max-width:60%;font-size:12px;color:#b4dbeb;background:#071628bb;border:1px solid #246074;border-radius:9px;padding:8px 11px;pointer-events:none}
+.move{position:absolute;right:17px;bottom:16px;display:grid;grid-template-columns:40px 40px 40px;grid-template-rows:40px 40px;gap:4px;z-index:3}.move button{border:1px solid #4ebccc;background:#0b2b42d9;color:#c9fbff;border-radius:9px;font-size:19px;font-weight:700;touch-action:none}.move button:active{background:#1e7584}.move #up{grid-column:2;grid-row:1}.move #left{grid-column:1;grid-row:2}.move #down{grid-column:2;grid-row:2}.move #right{grid-column:3;grid-row:2}
+.bottom{margin:0 16px 17px;padding:13px 15px;max-width:1518px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:#b7ccd8;font-size:12px}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#4ae4cc;box-shadow:0 0 12px #4ae4cc}.bottom strong{color:#e9ffff}.notice{margin-top:6px;border-top:1px solid #205166;padding-top:11px}
+@media(min-width:1550px){.bottom{margin-left:auto;margin-right:auto}}
+@media(max-width:770px){.top{padding:13px}.logo{font-size:12px}.tag{font-size:9px;padding:5px 8px}.layout{display:flex;flex-direction:column;padding:10px;gap:10px}.viewer{order:0;min-height:430px}.panel{order:1}#stage{min-height:430px}.bottom{margin:0 10px 12px}.view-head{top:12px;left:12px;right:12px}.center-help{max-width:54%;font-size:10px}.tool{min-height:41px}.move{bottom:12px;right:10px}.move{grid-template-columns:36px 36px 36px;grid-template-rows:36px 36px}}
+@media(max-width:410px){.sub{font-size:10px}.viewer,#stage{min-height:365px}.view-label{font-size:9px}.center-help{font-size:9px;padding:5px}}
+
+/* v0.4: panel plegable, pantalla completa, barra de modos y puente de voz */
+.top-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.view-actions{position:absolute;top:49px;right:15px;z-index:5;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:70%}
+.view-actions .action{background:#0b2a42d9;backdrop-filter:blur(6px);font-size:11px;padding:8px 10px}
+.view-actions .selected{background:#195c65;color:#eaffff;border-color:#6dedf6}
+.panel-extra{border-top:1px solid #25536a;padding-top:10px;display:grid;gap:8px}
+.panel-extra h3{color:#91edff;letter-spacing:.08em;font-size:12px;margin:3px 0}
+.inline-field{display:flex;align-items:center;justify-content:space-between;gap:9px;font-size:12px}
+.inline-field input[type=range]{width:55%;accent-color:#4be5f0}
+.presets{display:flex;gap:6px}.swatch{flex:1;height:31px;border-radius:9px;border:1px solid #b5f6ff66;cursor:pointer}
+.voice-row{display:flex;gap:6px}.voice-row input{min-width:0;flex:1;border-radius:8px;border:1px solid #337b90;background:#061a2b;color:#eafcff;padding:10px;font-size:12px}
+.voice-row .action{white-space:nowrap}.voice-row input::placeholder{color:#8aaabb}
+#voiceLog{white-space:pre-wrap;overflow-wrap:anywhere;min-height:63px;max-height:138px;overflow:auto;background:#031524;border:1px solid #1d5468;padding:9px;border-radius:9px;font:11px/1.5 ui-monospace,monospace;color:#99e9ed}
+#garmentSelect{background:#0b2b40;color:#d9fbff;border:1px solid #26718a;border-radius:8px;padding:8px;width:100%;max-width:100%}
+#togglePanel{white-space:nowrap}
+.panel-hidden .panel{display:none}.panel-hidden .layout{grid-template-columns:minmax(0,1fr)}
+.viewer:fullscreen,.viewer:-webkit-full-screen{height:100dvh;width:100vw;border:0;border-radius:0;background:#030b18}
+.viewer:fullscreen #stage,.viewer:-webkit-full-screen #stage{height:100%;min-height:0}
+.viewer:fullscreen .center-help,.viewer:-webkit-full-screen .center-help{bottom:20px}
+@media(max-width:770px){.top{gap:7px}.top-actions .tag{display:none}.view-actions{top:40px;right:8px;left:8px;max-width:none;justify-content:flex-end}.view-actions .action{font-size:10px;padding:7px}.panel-extra{gap:10px}.panel{padding:12px}.viewer:fullscreen,.viewer:-webkit-full-screen{min-height:100dvh}.viewer:fullscreen #stage,.viewer:-webkit-full-screen #stage{min-height:0}.center-help{bottom:8px;left:8px;max-width:49%}}
+@media(max-width:410px){.top-actions{margin-left:auto}.top .sub{max-width:205px}.view-actions{top:32px}.view-actions .action{padding:6px;font-size:9px}.view-head .live{display:none}}
+@media(prefers-reduced-motion:reduce){.action{transition:none}}
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<header class="top">
+  <div><div class="logo"><b>LAB</b> TECHNOLOGY / TRIDIMENSIONAL</div><div class="sub">Laboratorio independiente · Esfera 3D holográfica · Versión 0.4 experimental</div></div>
+  <div class="top-actions"><button class="action secondary" type="button" id="togglePanel" aria-expanded="true" aria-controls="toolsPanel">☰ Ocultar herramientas</button><div class="tag">PRUEBA WEB · ANDROID / PC</div></div>
+</header>
+<main class="layout">
+  <aside class="panel" id="toolsPanel" aria-label="Herramientas del visor">
+    <div class="section-title">10 herramientas funcionales</div>
+    <div class="tool"><span class="num">01</span><div class="tool-body"><label for="fileModel">Importar avatar .GLB</label><button class="action" id="pickModel" type="button">Cargar GLB</button><input class="file" type="file" id="fileModel" accept=".glb,model/gltf-binary"></div></div>
+    <div class="tool"><span class="num">02</span><div class="tool-body"><label for="sphereSize">Tamaño de esfera</label><input type="range" id="sphereSize" min="1.3" max="2.4" step="0.05" value="1.8"><output id="sizeValue">1.80</output></div></div>
+    <div class="tool"><span class="num">03</span><div class="tool-body"><label for="sphereColor">Color holográfico</label><input type="color" id="sphereColor" value="#39e8ff"></div></div>
+    <div class="tool"><span class="num">04</span><div class="tool-body"><label for="glow">Brillo</label><input type="range" id="glow" min="0.2" max="2.2" step="0.1" value="1.0"><output id="glowValue">1.0</output></div></div>
+    <div class="tool"><span class="num">05</span><div class="tool-body"><label>Rejilla 3D</label><button class="action active" data-toggle="wire" type="button">Activa</button></div></div>
+    <div class="tool"><span class="num">06</span><div class="tool-body"><label>Partículas luminosas</label><button class="action active" data-toggle="particles" type="button">Activas</button></div></div>
+    <div class="tool"><span class="num">07</span><div class="tool-body"><label>Esfera giratoria</label><button class="action active" data-toggle="spin" type="button">Activa</button></div></div>
+    <div class="tool"><span class="num">08</span><div class="tool-body"><label>Iluminación 3D</label><button class="action active" data-toggle="lights" type="button">Intensa</button></div></div>
+    <div class="tool"><span class="num">09</span><div class="tool-body"><label>Animación del avatar</label><button class="action active" data-toggle="animate" type="button">Activa</button></div></div>
+    <div class="tool"><span class="num">10</span><div class="tool-body"><label>Restablecer visor</label><button class="action secondary" id="reset" type="button">Reiniciar</button></div></div>
+
+    <div class="panel-extra">
+      <h3>11 · Colores rápidos (A)</h3>
+      <div class="presets" aria-label="Colores de esfera">
+        <button class="swatch" data-color="#39e8ff" style="background:#39e8ff" aria-label="Esfera cian" title="Cian"></button>
+        <button class="swatch" data-color="#ff45d4" style="background:#ff45d4" aria-label="Esfera rosa" title="Rosa"></button>
+        <button class="swatch" data-color="#45f3a3" style="background:#45f3a3" aria-label="Esfera verde" title="Verde"></button>
+      </div>
+      <h3>12 · Escaneo visual (B)</h3>
+      <div class="inline-field"><label for="scanSpeed">Velocidad de efecto</label><input type="range" min="0.15" max="1.5" value="0.5" step="0.05" id="scanSpeed"><output id="scanSpeedValue">0.50×</output></div>
+      <div class="small">El escaneo es un EFECTO VISUAL; no captura datos 3D.</div>
+      <h3>13 · Movimiento del avatar</h3>
+      <div class="inline-field"><label for="avatarX">Lateral X</label><input id="avatarX" type="range" min="-0.45" max="0.45" step="0.01" value="0"></div>
+      <div class="inline-field"><label for="avatarY">Altura Y</label><input id="avatarY" type="range" min="-0.45" max="0.45" step="0.01" value="0"></div>
+      <div class="inline-field"><label for="avatarZ">Profundidad Z</label><input id="avatarZ" type="range" min="-0.45" max="0.45" step="0.01" value="0"></div>
+      <div class="inline-field"><label for="avatarRot">Giro</label><input id="avatarRot" type="range" min="0" max="360" value="0" step="1"></div>
+      <div class="inline-field"><label for="avatarScale">Escala</label><input id="avatarScale" type="range" min="0.4" max="1.6" value="1" step="0.05"></div>
+      <h3>14 · Mayra: materiales del avatar</h3>
+      <label class="small" for="garmentSelect">Seleccionar pieza de ropa para cambiar su color</label>
+      <select id="garmentSelect"><option value="demo">Ropa del maniquí de prueba</option></select>
+      <div class="small" id="garmentTip">En un GLB escaneado, la ropa debe estar separada o identificada como una malla/material.</div>
+      <h3>15 · Puente IA · Voz a acciones</h3>
+      <div class="voice-row"><button class="action" id="micButton" type="button">🎙️ Micrófono</button><button class="action secondary" id="voiceReply" type="button" aria-pressed="false">🔇 Respuesta</button></div>
+      <div class="voice-row"><input id="voiceText" type="text" maxlength="250" placeholder="Ej.: Mayra, ropa roja" aria-label="Escribir comando para el puente"><button id="sendVoiceText" class="action" type="button">Ejecutar</button></div>
+      <div class="small">Probá «esfera rosa», «Mayra ropa azul», «Mayra girá 90 grados», «esfera más grande», «escaneo lento». La voz depende de la compatibilidad y permisos del navegador.</div>
+      <div id="voiceLog" aria-live="polite">Puente seguro preparado. Esperando un comando.</div>
+      <div class="small">Traduce frases conocidas a instrucciones estructuradas verificadas. NO genera ni ejecuta JavaScript libre, ni incluye una IA generativa externa todavía.</div>
+    </div>
+    <div class="notice small"><strong style="color:#bceef5">Importante:</strong> el muñeco inicial es una DEMOSTRACIÓN, no una reconstrucción de Mayra. Cargar un GLB no genera esqueleto ni animaciones automáticamente.</div>
+    <div class="small">Un solo HTML. Necesita conexión a Internet para cargar Three.js. La selección del GLB se procesa en el navegador; este prototipo no lo sube a un servidor.</div>
+  </aside>
+  <section class="viewer" aria-label="Visor tridimensional">
+    <div class="view-head"><div class="view-label">LAB / MOTOR HOLOGRÁFICO REAL 3D<div style="margin-top:7px;opacity:.6;letter-spacing:normal">Esfera geométrica + perspectiva + entorno luminoso</div></div><span class="live">● 3D EN TIEMPO REAL</span></div>
+    <div class="view-actions" aria-label="Acciones del visor">
+      <button id="viewOrbit" class="action selected" type="button">◉ Orbitar cámara</button>
+      <button id="viewAvatar" class="action" type="button">↻ Girar avatar</button>
+      <button id="scanToggle" class="action selected" type="button">◈ Escaneo ON</button>
+      <button id="viewMic" class="action" type="button">🎙️ Voz</button>
+      <button id="fullscreen" class="action" type="button">⛶ Pantalla completa</button>
+    </div>
+    <div id="stage" role="application" aria-label="Esfera holográfica: arrastrar para girar, pellizcar para acercar"></div>
+    <div id="sceneFeedback" aria-live="polite" style="position:absolute;z-index:4;bottom:83px;left:16px;max-width:55%;font-size:11px;color:#9effea;text-shadow:0 1px 4px #000;pointer-events:none">Listo para cargar un GLB.</div>
+    <div class="center-help" id="viewerHint">Orbitar cámara: girá alrededor de la esfera. Girar avatar: arrastrá para rotar el modelo. Flechas: movimiento.</div>
+    <div class="move" aria-label="Controles para mover modelo"><button type="button" id="up" aria-label="Avanzar">↑</button><button type="button" id="left" aria-label="Girar izquierda">←</button><button type="button" id="down" aria-label="Retroceder">↓</button><button type="button" id="right" aria-label="Girar derecha">→</button></div>
+  </section>
+</main>
+<footer class="bottom"><span class="status-dot" aria-hidden="true"></span><strong id="status">Preparando escena 3D…</strong><span id="modelName">Modelo: maniquí de prueba (NO es Mayra).</span><span>Dedo/mouse: orbitar o girar avatar · Flechas/WASD: mover · Voz: órdenes seguras</span></footer>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+// ==========================================================
+// EDITAR AQUÍ: tamaño inicial, color inicial y velocidad
+// ==========================================================
+const CONFIG = {
+  sphereRadius: 1.80,       // CAMBIAR TAMAÑO: por ejemplo 2.10
+  sphereColor: '#39e8ff',  // CAMBIAR COLOR: por ejemplo '#ff47d5'
+  rotationSpeed: 0.11,     // velocidad de rotación holográfica
+  particleCount: 360      // bajar a 120 en celulares lentos
+};
+
+const $ = id => document.getElementById(id);
+const status = (message, good = true) => { $('status').textContent = message; document.querySelector('.status-dot').style.background = good ? '#4ae4cc' : '#ffb25a'; };
+const stage = $('stage');
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({antialias:true, alpha:true, powerPreference:'high-performance'});
+} catch (error) {
+  status('Este navegador no pudo iniciar WebGL.', false);
+  $('viewerHint').textContent = 'No se pudo iniciar el motor 3D. Probá actualizar Chrome o habilitar WebGL.';
+  throw error;
+}
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.35;
+stage.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100); // FOV 45; perspectiva real
+camera.position.set(0, 0.25, 5); // Z = 5 en pantallas amplias
+const orbit = new OrbitControls(camera, renderer.domElement);
+orbit.enableDamping = true;
+orbit.dampingFactor = 0.06;
+orbit.target.set(0,0,0);
+orbit.minDistance = 3.1;
+orbit.maxDistance = 11;
+orbit.enablePan = false;
+orbit.rotateSpeed = 0.68;
+
+// Entorno simulado para reflejos: MeshStandardMaterial sin un entorno suele verse apagado.
+const pmrem = new THREE.PMREMGenerator(renderer);
+const room = new RoomEnvironment();
+const envTexture = pmrem.fromScene(room).texture;
+scene.environment = envTexture;
+room.dispose();
+pmrem.dispose();
+
+// Tres luces: blanca principal, azul lateral y ambiental tenue.
+const white = new THREE.DirectionalLight(0xffffff, 3.0);
+white.position.set(2, 3, 5);
+scene.add(white);
+const blue = new THREE.PointLight(0x247aff, 35, 16);
+blue.position.set(-3, 1.3, 2);
+scene.add(blue);
+const ambient = new THREE.AmbientLight(0x99c8ff, 0.8);
+scene.add(ambient);
+
+const holo = new THREE.Group();
+scene.add(holo);
+const geometry = new THREE.SphereGeometry(1, 64, 40); // geometría realmente 3D
+const shellMaterial = new THREE.MeshStandardMaterial({
+  color:CONFIG.sphereColor, roughness:0.18, metalness:0.46,
+  emissive:CONFIG.sphereColor, emissiveIntensity:0.20,
+  transparent:true, opacity:0.13, side:THREE.BackSide, depthWrite:false
+});
+const shell = new THREE.Mesh(geometry, shellMaterial);
+holo.add(shell);
+const wireMaterial = new THREE.MeshBasicMaterial({
+  color:CONFIG.sphereColor, wireframe:true, transparent:true, opacity:0.12,
+  depthWrite:false, blending:THREE.AdditiveBlending
+});
+const wire = new THREE.Mesh(geometry, wireMaterial);
+holo.add(wire);
+
+const ringMaterial = new THREE.MeshStandardMaterial({
+  color:CONFIG.sphereColor, emissive:CONFIG.sphereColor, emissiveIntensity:1.65,
+  roughness:0.25, metalness:0.5, transparent:true, opacity:0.68, depthWrite:false
+});
+const rings = new THREE.Group();
+for(const [angle,tilt] of [[0,0.1],[Math.PI/2,0.6],[Math.PI/2.7,-0.35]]) {
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.012,0.0045,5,160),ringMaterial);
+  ring.rotation.set(angle,tilt,0);
+  rings.add(ring);
+}
+holo.add(rings);
+
+const pointPositions = new Float32Array(CONFIG.particleCount*3);
+for(let i=0;i<CONFIG.particleCount;i++){
+  const theta = Math.random()*Math.PI*2;
+  const u = Math.random()*2-1;
+  const r = Math.cbrt(Math.random()) * .94;
+  const h = Math.sqrt(1-u*u);
+  pointPositions[i*3] = Math.cos(theta)*h*r;
+  pointPositions[i*3+1] = u*r;
+  pointPositions[i*3+2] = Math.sin(theta)*h*r;
+}
+const pointsGeo = new THREE.BufferGeometry();
+pointsGeo.setAttribute('position', new THREE.BufferAttribute(pointPositions,3));
+const pointsMaterial = new THREE.PointsMaterial({color:CONFIG.sphereColor,size:0.024,sizeAttenuation:true,transparent:true,opacity:0.83,depthWrite:false,blending:THREE.AdditiveBlending});
+const particles = new THREE.Points(pointsGeo,pointsMaterial);
+holo.add(particles);
+
+const avatarHolder = new THREE.Group();
+scene.add(avatarHolder);
+let currentAvatar, mixer = null, demoJoints = null, clips = [];
+let demoClothing=null, isDemo=true, garmentMeshes=[];
+let avatarUserScale=1, viewMode="orbit", scanning=true, scanPhase=0, scanSpeed=0.5;
+const loader = new GLTFLoader();
+const clock = new THREE.Clock();
+const state = {wire:true,particles:true,spin:true,lights:true,animate:true,glow:1};
+const movements = {up:false,down:false,left:false,right:false};
+let tick = 0;
+let baseSphereRadius = CONFIG.sphereRadius;
+
+function createDemoAvatar(){
+  const root = new THREE.Group();
+  const skin = new THREE.MeshStandardMaterial({color:0xbad3e5,roughness:0.63,metalness:0.1});
+  const suit = new THREE.MeshStandardMaterial({name:'Ropa_Demo',color:0x173f63,roughness:0.38,metalness:0.25});
+  demoClothing=suit;
+  const detail = new THREE.MeshStandardMaterial({color:0x49dfee,emissive:0x126c8e,emissiveIntensity:0.55,metalness:0.34,roughness:0.22});
+  const add=(parent,mesh,x,y,z)=>{mesh.position.set(x,y,z);parent.add(mesh);return mesh};
+  add(root,new THREE.Mesh(new THREE.CylinderGeometry(.25,.22,.66,18),suit),0,.25,0);
+  add(root,new THREE.Mesh(new THREE.SphereGeometry(.24,20,12),skin),0,.94,0);
+  add(root,new THREE.Mesh(new THREE.CylinderGeometry(.12,.15,.12,16),detail),0,.67,0);
+  add(root,new THREE.Mesh(new THREE.BoxGeometry(.19,.08,.025),detail),0,.27,.235);
+  const arms=[], legs=[];
+  for(const sign of [-1,1]){
+    const shoulder=new THREE.Group();shoulder.position.set(sign*.32,.52,0);root.add(shoulder);
+    add(shoulder,new THREE.Mesh(new THREE.CapsuleGeometry(.092,.52,5,12),suit),sign*.06,-.34,0);
+    add(shoulder,new THREE.Mesh(new THREE.SphereGeometry(.08,12,10),skin),sign*.06,-.68,0);
+    arms.push(shoulder);
+    const hip=new THREE.Group();hip.position.set(sign*.145,-.15,0);root.add(hip);
+    add(hip,new THREE.Mesh(new THREE.CapsuleGeometry(.123,.62,6,14),suit),0,-.49,0);
+    add(hip,new THREE.Mesh(new THREE.BoxGeometry(.25,.12,.35),detail),0,-.91,.06);
+    legs.push(hip);
+  }
+  const ground=new THREE.Mesh(new THREE.RingGeometry(.34,.38,60),new THREE.MeshBasicMaterial({color:0x39e8ff,transparent:true,opacity:.32,side:THREE.DoubleSide,depthWrite:false}));
+  ground.rotation.x=-Math.PI/2;ground.position.y=-1.22;root.add(ground);
+  demoJoints={arms,legs};
+  return root;
+}
+function replaceAvatar(newAvatar){
+  if(currentAvatar)avatarHolder.remove(currentAvatar);
+  currentAvatar=newAvatar;
+  avatarHolder.add(currentAvatar);
+  avatarHolder.position.set(0,0,0);
+  avatarHolder.rotation.set(0,0,0);
+}
+replaceAvatar(createDemoAvatar());
+updateGarmentSelector();
+
+function applySphereSettings(){
+  const color = new THREE.Color(CONFIG.sphereColor);
+  holo.scale.setScalar(baseSphereRadius);
+  shellMaterial.color.copy(color);shellMaterial.emissive.copy(color);
+  wireMaterial.color.copy(color);
+  ringMaterial.color.copy(color);ringMaterial.emissive.copy(color);
+  pointsMaterial.color.copy(color);
+  shellMaterial.emissiveIntensity=.20*state.glow;
+  wireMaterial.opacity=.12*state.glow;
+  ringMaterial.emissiveIntensity=1.65*state.glow;
+  pointsMaterial.opacity=Math.min(.96,.83*state.glow);
+  $('sizeValue').textContent=baseSphereRadius.toFixed(2);
+  $('glowValue').textContent=state.glow.toFixed(1);
+  document.documentElement.style.setProperty('--accent',CONFIG.sphereColor);
+}
+applySphereSettings();
+
+$('pickModel').addEventListener('click',()=> $('fileModel').click());
+$('fileModel').addEventListener('change',async e=>{
+  const file=e.target.files?.[0];
+  if(!file)return;
+  if(!file.name.toLowerCase().endsWith('.glb')){status('Seleccioná un modelo .glb',false);return;}
+  if(file.size>100*1024*1024){status('Modelo mayor a 100 MB: optimizalo antes de cargarlo en el celular.',false);return;}
+  status('Procesando el GLB localmente…');
+  try {
+    const data=await file.arrayBuffer();
+    loader.parse(data,'',gltf=>{
+      try {
+        const object=gltf.scene;
+        const bb=new THREE.Box3().setFromObject(object);
+        if(bb.isEmpty())throw new Error('El modelo no contiene geometría visible');
+        const sz=bb.getSize(new THREE.Vector3());
+        const center=bb.getCenter(new THREE.Vector3());
+        const maxDim=Math.max(sz.x,sz.y,sz.z,0.0001);
+        const scale=Math.min(2.55/Math.max(sz.y,.0001), 2.7/maxDim);
+        object.position.sub(center);
+        const normalized=new THREE.Group();
+        normalized.add(object);
+        normalized.scale.setScalar(scale);
+        replaceAvatar(normalized);
+        demoJoints=null;
+        isDemo=false;
+        garmentMeshes=[];
+        object.traverse(node=>{
+          if(node.isMesh && node.material){
+            garmentMeshes.push({mesh:node,label:(node.name||node.material?.name||'Malla')});
+          }
+        });
+        updateGarmentSelector();
+        clips=gltf.animations||[];
+        mixer=null;
+        if(clips.length){
+          mixer=new THREE.AnimationMixer(object);
+          const action=mixer.clipAction(clips[0]);action.play();mixer.timeScale=1;
+        }
+        $('modelName').textContent=`Modelo cargado: ${file.name} · ${clips.length} animación(es)`;
+        $('viewerHint').textContent=clips.length?'Modelo GLB cargado. Las flechas mueven el avatar; animación disponible.':'Modelo GLB cargado sin animación: se puede girar/desplazar, pero no caminar articuladamente hasta agregar rigging.';
+        status('GLB cargado correctamente.');
+      }catch(error){console.error(error);status('GLB sin geometría compatible.',false);}
+    },err=>{console.error(err);status('Error al abrir el GLB. Revisá si está dañado o necesita extensiones no incluidas.',false);});
+  }catch(err){console.error(err);status('No se pudo leer el archivo seleccionado.',false);}
+  finally{e.target.value='';}
+});
+$('sphereSize').addEventListener('input',e=>{baseSphereRadius=Number(e.target.value);applySphereSettings();});
+$('sphereColor').addEventListener('input',e=>{CONFIG.sphereColor=e.target.value;applySphereSettings();});
+$('glow').addEventListener('input',e=>{state.glow=Number(e.target.value);applySphereSettings();});
+const labels={wire:['Activa','Oculta'],particles:['Activas','Ocultas'],spin:['Activa','Detenida'],lights:['Intensa','Suave'],animate:['Activa','Pausada']};
+function updateToggles(){
+  document.querySelectorAll('[data-toggle]').forEach(btn=>{
+    const key=btn.dataset.toggle;
+    btn.classList.toggle('active',state[key]);
+    btn.textContent=labels[key][state[key]?0:1];
+  });
+  wire.visible=state.wire;
+  particles.visible=state.particles;
+  white.intensity=state.lights?3:.9;
+  blue.intensity=state.lights?35:9;
+  ambient.intensity=state.lights?.8:.5;
+  if(mixer)mixer.timeScale=state.animate?1:0;
+}
+document.querySelectorAll('[data-toggle]').forEach(btn=>btn.addEventListener('click',()=>{
+  const key=btn.dataset.toggle;state[key]=!state[key];updateToggles();
+}));
+$('reset').addEventListener('click',()=>{
+  baseSphereRadius=1.80;CONFIG.sphereColor='#39e8ff';state.glow=1;
+  Object.assign(state,{wire:true,particles:true,spin:true,lights:true,animate:true});
+  $('sphereSize').value='1.8';$('sphereColor').value=CONFIG.sphereColor;$('glow').value='1';
+  holo.rotation.set(0,0,0);avatarHolder.rotation.set(0,0,0);avatarHolder.position.set(0,0,0);
+  camera.position.set(0,.25,5);orbit.target.set(0,0,0);orbit.update();
+  applySphereSettings();updateToggles();
+  ['avatarX','avatarY','avatarZ','avatarRot'].forEach(id=>$(id).value=0);$('avatarScale').value=1;avatarUserScale=1;avatarHolder.scale.setScalar(1);
+  setViewMode('orbit');status('Vista y ajustes restablecidos.');
+});
+updateToggles();
+
+for(const direction of Object.keys(movements)){
+  const btn=$(direction);
+  const down=e=>{e.preventDefault();movements[direction]=true;btn.setPointerCapture?.(e.pointerId);};
+  const up=e=>{e.preventDefault();movements[direction]=false;};
+  btn.addEventListener('pointerdown',down);
+  btn.addEventListener('pointerup',up);
+  btn.addEventListener('pointercancel',up);
+  btn.addEventListener('lostpointercapture',()=>movements[direction]=false);
+}
+const keyMap={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
+window.addEventListener('keydown',e=>{const d=keyMap[e.code];if(d && !['INPUT','TEXTAREA'].includes(document.activeElement.tagName)){movements[d]=true;e.preventDefault();}});
+window.addEventListener('keyup',e=>{const d=keyMap[e.code];if(d)movements[d]=false;});
+window.addEventListener('blur',()=>{for(const k in movements)movements[k]=false;});
+
+// ==========================================================
+// LAB TRIDIMENSIONAL v0.4 · mejoras auditadas y puente seguro
+// ==========================================================
+const scanGeometry = new THREE.TorusGeometry(.89,.008,4,80);
+const scanMaterial = new THREE.MeshBasicMaterial({color:CONFIG.sphereColor,transparent:true,opacity:.75,depthWrite:false,blending:THREE.AdditiveBlending});
+const scanRing = new THREE.Mesh(scanGeometry,scanMaterial);
+scanRing.rotation.x=Math.PI/2;
+holo.add(scanRing);
+function updateGarmentSelector(){
+  const select=$('garmentSelect');
+  select.replaceChildren();
+  if(isDemo){select.add(new Option('Ropa del maniquí de prueba','demo'));$('garmentTip').textContent='Maniquí de prueba: el color de ropa funciona. Modelo real: requiere prendas identificables.';return;}
+  if(!garmentMeshes.length){select.add(new Option('Sin piezas de malla detectadas','none'));return;}
+  garmentMeshes.forEach((m,i)=> select.add(new Option((i+1)+' · '+m.label.slice(0,40),String(i))));
+  const clothingPattern=/ropa|vestido|dress|shirt|blouse|camisa|campera|pantalon|pants|remera|skirt|clothing|cloth|jacket|shirt|garment|suit|outfit/i;
+  const match=garmentMeshes.findIndex(o=>clothingPattern.test(o.label+' '+(Array.isArray(o.mesh.material)?o.mesh.material.map(m=>m.name).join(' '):o.mesh.material.name)));
+  if(match>=0)select.value=String(match);
+  else select.value='0';
+  $('garmentTip').textContent=match>=0?'Se identificó una pieza por nombre; revisá que sea ropa antes de recolorear.':'No se identificó ropa por nombre: elegí manualmente la malla correcta antes de cambiar color.';
+}
+function setSphereColor(hex){
+  CONFIG.sphereColor=hex;
+  $('sphereColor').value=hex;
+  scanMaterial.color.set(hex);
+  applySphereSettings();
+}
+document.querySelectorAll('[data-color]').forEach(b=>b.addEventListener('click',()=>setSphereColor(b.dataset.color)));
+$('scanSpeed').addEventListener('input',e=>{scanSpeed=Number(e.target.value);$('scanSpeedValue').textContent=scanSpeed.toFixed(2)+'×';});
+$('scanToggle').addEventListener('click',()=>{
+  scanning=!scanning;scanRing.visible=scanning;
+  $('scanToggle').classList.toggle('selected',scanning);
+  $('scanToggle').textContent=scanning?'◈ Escaneo ON':'◇ Escaneo OFF';
+});
+for(const id of ['avatarX','avatarY','avatarZ','avatarRot','avatarScale']){
+  $(id).addEventListener('input',()=>{
+    avatarHolder.position.set(Number($('avatarX').value),Number($('avatarY').value),Number($('avatarZ').value));
+    avatarHolder.rotation.y=THREE.MathUtils.degToRad(Number($('avatarRot').value));
+    avatarUserScale=Number($('avatarScale').value);
+    avatarHolder.scale.setScalar(avatarUserScale);
+  });
+}
+function syncAvatarSliders(){
+  $('avatarX').value=String(THREE.MathUtils.clamp(avatarHolder.position.x,-.45,.45));
+  $('avatarY').value=String(THREE.MathUtils.clamp(avatarHolder.position.y,-.45,.45));
+  $('avatarZ').value=String(THREE.MathUtils.clamp(avatarHolder.position.z,-.45,.45));
+  $('avatarRot').value=String((THREE.MathUtils.radToDeg(avatarHolder.rotation.y)%360+360)%360);
+  $('avatarScale').value=String(avatarUserScale);
+}
+function setViewMode(m){
+  viewMode=m;
+  orbit.enabled=m==='orbit';
+  $('viewOrbit').classList.toggle('selected',m==='orbit');
+  $('viewAvatar').classList.toggle('selected',m==='avatar');
+  $('viewerHint').textContent=m==='orbit'?'Orbitá la cámara con un dedo; pellizcá para acercar. No es una cámara de videojuego en primera persona.':'Arrastrá para girar el avatar; la cámara permanece fija. Usá los controles para moverlo.';
+  if(m==='avatar'){camera.position.set(0,.25,camera.aspect<.82?6:5);camera.lookAt(0,0,0);orbit.target.set(0,0,0);orbit.update();}
+}
+$('viewOrbit').addEventListener('click',()=>setViewMode('orbit'));
+$('viewAvatar').addEventListener('click',()=>setViewMode('avatar'));
+let dragAvatar=false, lastDragX=0;
+renderer.domElement.addEventListener('pointerdown',e=>{
+  if(viewMode!=='avatar')return;
+  dragAvatar=true;lastDragX=e.clientX;
+  renderer.domElement.setPointerCapture?.(e.pointerId);
+});
+renderer.domElement.addEventListener('pointermove',e=>{
+  if(!dragAvatar||viewMode!=='avatar')return;
+  avatarHolder.rotation.y+=(e.clientX-lastDragX)*.012;
+  lastDragX=e.clientX;
+  syncAvatarSliders();
+});
+for(const ev of ['pointerup','pointercancel','lostpointercapture'])renderer.domElement.addEventListener(ev,()=>dragAvatar=false);
+$('togglePanel').addEventListener('click',()=>{
+  const hidden=document.body.classList.toggle('panel-hidden');
+  $('togglePanel').textContent=hidden?'☰ Mostrar herramientas':'☰ Ocultar herramientas';
+  $('togglePanel').setAttribute('aria-expanded',String(!hidden));
+});
+$('fullscreen').addEventListener('click',async()=>{
+  const viewer=document.querySelector('.viewer');
+  try{
+    if(document.fullscreenElement)await document.exitFullscreen();
+    else if(viewer.requestFullscreen)await viewer.requestFullscreen();
+    else status('Pantalla completa no disponible en este navegador.',false);
+  }catch(error){status('El navegador rechazó pantalla completa.',false);}
+});
+document.addEventListener('fullscreenchange',()=>{
+  $('fullscreen').textContent=document.fullscreenElement?'⛶ Salir de pantalla completa':'⛶ Pantalla completa';
+  setTimeout(resize,80);
+});
+// Intérprete seguro: voz -> texto -> instrucción JSON validada -> función Three.js.
+// No se evalúa código arbitrario ni se envían datos a una API propia.
+const COLOR_MAP={rojo:'#ee4d5a',roja:'#ee4d5a',azul:'#367fff',rosa:'#ff45d4',rosado:'#ff45d4',verde:'#45f3a3',violeta:'#af74f9',morado:'#af74f9',blanco:'#ffffff',negro:'#17191e',amarillo:'#f6d655',naranja:'#ff9548',cian:'#39e8ff',turquesa:'#39e8ff'};
+const clean=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[.,;:!?]/g,' ').replace(/\s+/g,' ').trim();
+function detectColor(t){for(const [name,hex] of Object.entries(COLOR_MAP)){if(new RegExp('\\b'+name+'\\b').test(t))return {name,hex};}return null;}
+function parseSafeCommand(raw){
+  const t=clean(raw);const col=detectColor(t);
+  if(col&&/(ropa|vestido|campera|camisa|remera|pantalon|indumentaria|atuendo)/.test(t))return {type:'avatar.clothing.color',color:col.hex,label:col.name};
+  if(col&&/(esfera|holograma|bola|color)/.test(t))return {type:'sphere.color',color:col.hex,label:col.name};
+  if(/(escaneo|escaner|scanner|scan)/.test(t)&&/(lento|despacio|mitad)/.test(t))return {type:'scan.speed',value:.25};
+  if(/(escaneo|escaner|scanner|scan)/.test(t)&&/(rapido|acelerar)/.test(t))return {type:'scan.speed',value:1.0};
+  if(/(escaneo|escaner|scanner|scan)/.test(t)&&/(apagar|desactivar|ocultar)/.test(t))return {type:'scan.visible',value:false};
+  if(/(escaneo|escaner|scanner|scan)/.test(t)&&/(activar|encender|mostrar)/.test(t))return {type:'scan.visible',value:true};
+  const num=t.match(/(\d{1,3})\s*(?:grados|grado)?/);
+  if(/(gira|girar|rota|rotar)/.test(t)&&/(mayra|avatar|modelo|personaje)/.test(t))return {type:'avatar.rotate',degrees:num?Math.min(360,Number(num[1])):90};
+  if(/(esfera|holograma|bola)/.test(t)&&/(grande|agranda|aumenta)/.test(t))return {type:'sphere.size',value:Math.min(2.4,baseSphereRadius+.2)};
+  if(/(esfera|holograma|bola)/.test(t)&&/(chica|achica|disminuye|pequena)/.test(t))return {type:'sphere.size',value:Math.max(1.3,baseSphereRadius-.2)};
+  if(/(mayra|avatar|modelo)/.test(t)&&/(adelante|avanza)/.test(t))return {type:'avatar.move',axis:'z',value:-.25};
+  if(/(mayra|avatar|modelo)/.test(t)&&/(atras|retrocede)/.test(t))return {type:'avatar.move',axis:'z',value:.25};
+  if(/(mayra|avatar|modelo)/.test(t)&&/(izquierda|derecha)/.test(t))return {type:'avatar.move',axis:'x',value:t.includes('izquierda')?-.25:.25};
+  return null;
+}
+function recolorClothing(hex){
+  if(isDemo&&demoClothing){demoClothing.color.set(hex);return 'Ropa del maniquí de prueba actualizada.';}
+  if(!garmentMeshes.length)return 'No hay mallas de ropa disponibles.';
+  const entry=garmentMeshes[Number($('garmentSelect').value)];
+  if(!entry)return 'Elegí primero una malla de ropa.';
+  const mats=Array.isArray(entry.mesh.material)?entry.mesh.material:[entry.mesh.material];
+  if(!mats.some(m=>m.color))return 'Esta malla no tiene un material con color editable.';
+  const cloned=mats.map(m=>{const c=m.clone();if(c.color)c.color.set(hex);return c;});
+  entry.mesh.material=Array.isArray(entry.mesh.material)?cloned:cloned[0];
+  return 'Color aplicado a '+entry.label+'. Comprobá que hayas seleccionado la prenda correcta.';
+}
+function executeSafeCommand(cmd){
+  switch(cmd.type){
+    case 'sphere.color':setSphereColor(cmd.color);return 'Esfera de color '+cmd.label+'.';
+    case 'avatar.clothing.color':return recolorClothing(cmd.color);
+    case 'scan.speed':scanSpeed=cmd.value;$('scanSpeed').value=String(scanSpeed);$('scanSpeedValue').textContent=scanSpeed.toFixed(2)+'×';return 'Velocidad del efecto cambiada.';
+    case 'scan.visible':scanning=cmd.value;scanRing.visible=scanning;$('scanToggle').textContent=scanning?'◈ Escaneo ON':'◇ Escaneo OFF';$('scanToggle').classList.toggle('selected',scanning);return 'Efecto visual '+(scanning?'encendido.':'apagado.');
+    case 'sphere.size':baseSphereRadius=cmd.value;$('sphereSize').value=String(cmd.value);applySphereSettings();return 'Tamaño de esfera actualizado.';
+    case 'avatar.rotate':avatarHolder.rotation.y+=THREE.MathUtils.degToRad(cmd.degrees);syncAvatarSliders();return 'Avatar girado '+cmd.degrees+' grados.';
+    case 'avatar.move':avatarHolder.position[cmd.axis]=THREE.MathUtils.clamp(avatarHolder.position[cmd.axis]+cmd.value,-.45,.45);syncAvatarSliders();return 'Avatar desplazado.';
+    default:return 'Orden no reconocida.';
+  }
+}
+let replyEnabled=false;
+function voiceReply(s){if(!replyEnabled||!('speechSynthesis' in window))return;const u=new SpeechSynthesisUtterance(s);u.lang='es-AR';u.rate=1;window.speechSynthesis.cancel();window.speechSynthesis.speak(u);}
+function runPhrase(raw){
+  const cmd=parseSafeCommand(raw);
+  if(!cmd){$('voiceLog').textContent='Orden: '+raw+'\nNo reconocida por el intérprete local. Usá un ejemplo del panel.';$('sceneFeedback').textContent='Orden no reconocida: probá una frase del panel.';return;}
+  const msg=executeSafeCommand(cmd);
+  $('voiceLog').textContent='Escuchado: '+raw+'\nAcción permitida:\n'+JSON.stringify(cmd,null,2)+'\nResultado: '+msg;
+  status(msg);$('sceneFeedback').textContent=msg;voiceReply(msg);
+}
+$('sendVoiceText').addEventListener('click',()=>{const t=$('voiceText').value.trim();if(t)runPhrase(t);});
+$('voiceText').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('sendVoiceText').click();}});
+$('voiceReply').addEventListener('click',()=>{
+  replyEnabled=!replyEnabled;
+  $('voiceReply').textContent=replyEnabled?'🔊 Respuesta':'🔇 Respuesta';
+  $('voiceReply').setAttribute('aria-pressed',String(replyEnabled));
+});
+const SpeechAPI=window.SpeechRecognition||window.webkitSpeechRecognition;
+let recognizer=null,listening=false;
+$('viewMic').addEventListener('click',()=>$('micButton').click());
+$('micButton').addEventListener('click',()=>{
+  if(!SpeechAPI){$('voiceLog').textContent='Este navegador no ofrece reconocimiento de voz web. Escribí la orden en el casillero.';$('sceneFeedback').textContent='Voz no disponible. Usá el panel de texto.';return;}
+  if(!window.isSecureContext){$('voiceLog').textContent='El micrófono necesita una web segura HTTPS (por ejemplo, GitHub Pages). Probá el campo de texto o publicá el visor.';$('sceneFeedback').textContent='Para hablar, abrí el sitio con HTTPS.';return;}
+  if(listening){recognizer?.stop();return;}
+  recognizer=new SpeechAPI();recognizer.lang='es-AR';recognizer.continuous=false;recognizer.interimResults=false;recognizer.maxAlternatives=1;
+  recognizer.onstart=()=>{listening=true;$('micButton').textContent='⏹️ Detener voz';$('viewMic').textContent='⏹️ Voz';$('voiceLog').textContent='Escuchando en español argentino…';$('sceneFeedback').textContent='Escuchando…';};
+  recognizer.onresult=e=>{const said=e.results[0][0].transcript;$('voiceText').value=said;runPhrase(said);};
+  recognizer.onerror=e=>{$('voiceLog').textContent='Reconocimiento de voz: '+e.error+'. Podés escribir la orden.';$('sceneFeedback').textContent='Micrófono: '+e.error;};
+  recognizer.onend=()=>{listening=false;$('micButton').textContent='🎙️ Micrófono';$('viewMic').textContent='🎙️ Voz';};
+  try{recognizer.start();}catch(err){$('voiceLog').textContent='No se pudo iniciar el micrófono: '+err.message;}
+});
+// Habilitación inicial en pantallas pequeñas: mostrar visor primero, herramientas plegables abajo.
+if(window.matchMedia('(max-width:770px)').matches){
+  document.body.classList.add('panel-hidden');$('togglePanel').textContent='☰ Mostrar herramientas';$('togglePanel').setAttribute('aria-expanded','false');
+}
+
+function resize(){
+  const width=Math.max(1,stage.clientWidth),height=Math.max(1,stage.clientHeight);
+  renderer.setSize(width,height,false);
+  camera.aspect=width/height;
+  if(viewMode==='avatar')camera.position.z=camera.aspect<.82?6.0:5.0; // en modo avatar: cámara fija
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage);
+resize();
+function loop(){
+  requestAnimationFrame(loop);
+  const delta=Math.min(clock.getDelta(),.04);
+  tick+=delta;
+  if(scanning){scanPhase+=delta*scanSpeed;scanRing.position.y=Math.sin(scanPhase*2.2)*.72;}
+  if(state.spin){holo.rotation.y+=delta*CONFIG.rotationSpeed;rings.rotation.z+=delta*.06;}
+  if(mixer&&state.animate)mixer.update(delta);
+  let walking=false;
+  if(movements.left)avatarHolder.rotation.y+=delta*1.15;
+  if(movements.right)avatarHolder.rotation.y-=delta*1.15;
+  if(movements.up||movements.down){
+    const direction=(movements.up?1:0)-(movements.down?1:0);
+    avatarHolder.position.z=THREE.MathUtils.clamp(avatarHolder.position.z-direction*delta*.38,-.34,.34);
+    walking=true;
+  }
+  if(demoJoints){
+    const wave=walking && state.animate?Math.sin(tick*8)*.4:0;
+    demoJoints.arms[0].rotation.x=wave;
+    demoJoints.arms[1].rotation.x=-wave;
+    demoJoints.legs[0].rotation.x=-wave;
+    demoJoints.legs[1].rotation.x=wave;
+  }
+  if(viewMode==='orbit')orbit.update();
+  renderer.render(scene,camera);
+}
+status('v0.4: escena 3D y puente de comandos preparados.');
+loop();
+</script>
+</body>
+</html>
